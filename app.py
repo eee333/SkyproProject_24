@@ -31,14 +31,13 @@ def build_query(query, f):
             arg = int(split_item[1])
             res = list(res)[:arg]
 
-    # print(list(res))
     return res
 
-@app.route("/perform_query")
+@app.route("/perform_query", methods=['POST'])
 def perform_query():
     try:
-        query = request.args["query"]
-        file_name = request.args["file_name"]
+        query = request.form["query"]
+        file_name = request.form["file_name"]
     except KeyError:
         raise BadRequest
 
@@ -50,11 +49,6 @@ def perform_query():
         res = build_query(query, f)
         content = "\n".join(res)
 
-
-    # получить параметры query и file_name из request.args, при ошибке вернуть ошибку 400
-    # проверить, что файла file_name существует в папке DATA_DIR, при ошибке вернуть ошибку 400
-    # с помощью функционального программирования (функций filter, map), итераторов/генераторов сконструировать запрос
-    # вернуть пользователю сформированный результат
     return app.response_class(content, content_type="text/plain")
 
 
