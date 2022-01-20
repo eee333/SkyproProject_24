@@ -11,5 +11,10 @@ lesson23_project
 
 Пример:
 
-file_name=apache_logs.txt
+1. file_name=apache_logs.txt
 query=filter:POST|sort:desc|map:0|unique|limit:5
+2. file_name=apache_logs.txt
+query=filter:GET|regex:images\/\w+\.jpg|sort:desc
+
+
+
