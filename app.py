@@ -1,6 +1,6 @@
 import os
 import re
-from typing import Iterator, List, Optional
+from typing import Iterator
 
 from flask import Flask, request
 from werkzeug.exceptions import BadRequest
