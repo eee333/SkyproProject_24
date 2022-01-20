@@ -1,4 +1,6 @@
 import os
+import re
+from typing import Iterator, List, Optional
 
 from flask import Flask, request
 from werkzeug.exceptions import BadRequest
@@ -9,31 +11,45 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 
-def build_query(query, f):
+def build_query(query, f) -> Iterator:
+    res: Iterator
     query_items = query.split("|")
     res = map(lambda v: v.strip(), f)
     for item in query_items:
-        split_item = item.split(":")
-        cmd = split_item[0]
-        if cmd == "filter":
-            arg = split_item[1]
-            res = filter(lambda v, txt=arg: txt in v, res)
-        if cmd == "map":
-            arg = int(split_item[1])
-            res = map(lambda v, idx=arg: v.split(" ")[idx], res)
-        if cmd == "unique":
-            res = set(res)
-        if cmd == "sort":
-            arg = split_item[1]
-            reverse = (arg == "desc")
-            res = sorted(res, reverse=reverse)
-        if cmd == "limit":
-            arg = int(split_item[1])
-            res = list(res)[:arg]
+        if ":" in item:
+            split_item = item.split(":")
+            cmd = split_item[0]
+            val = split_item[1]
+        else:
+            cmd = item
+            val = ""
+        res = apply_cmd(cmd, val, res)
 
     return res
 
-@app.route("/perform_query", methods=['POST'])
+
+def apply_cmd(cmd: str, val: str, list_in: Iterator) -> Iterator:
+    if cmd == "filter":
+        list_in = filter(lambda v, txt=val: txt in v, list_in)
+    elif cmd == "regex":
+        regex = re.compile(val)
+        list_in = filter(lambda v: regex.search(v), list_in)
+    elif cmd == "map":
+        arg = int(val)
+        list_in = map(lambda v, idx=arg: v.split(" ")[idx], list_in)
+    elif cmd == "unique":
+        list_in = iter(set(list_in))
+    elif cmd == "sort":
+        reverse = (val == "desc")
+        list_in = iter(sorted(list_in, reverse=reverse))
+    elif cmd == "limit":
+        arg = int(val)
+        list_in = iter(list(list_in)[:arg])
+
+    return list_in
+
+
+@app.route("/perform_query", methods=['POST'])  # Пример filter:GET|regex:images\/\w+\.jpg|sort:desc
 def perform_query():
     try:
         query = request.form["query"]
