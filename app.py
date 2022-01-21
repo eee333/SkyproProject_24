@@ -1,8 +1,9 @@
 import os
 import re
-from typing import Iterator
+from typing import Iterator, Union
 
 from flask import Flask, request
+from werkzeug import Response
 from werkzeug.exceptions import BadRequest
 
 app = Flask(__name__)
@@ -11,7 +12,7 @@ BASE_DIR = os.path.dirname(os.path.abspath(__file__))
 DATA_DIR = os.path.join(BASE_DIR, "data")
 
 
-def build_query(query, f) -> Iterator:
+def build_query(query: str, f: Iterator) -> Iterator:
     res: Iterator
     query_items = query.split("|")
     res = map(lambda v: v.strip(), f)
@@ -30,13 +31,13 @@ def build_query(query, f) -> Iterator:
 
 def apply_cmd(cmd: str, val: str, list_in: Iterator) -> Iterator:
     if cmd == "filter":
-        list_in = filter(lambda v, txt=val: txt in v, list_in)
+        list_in = filter(lambda v: val in v, list_in)
     elif cmd == "regex":
         regex = re.compile(val)
         list_in = filter(lambda v: regex.search(v), list_in)
     elif cmd == "map":
         arg = int(val)
-        list_in = map(lambda v, idx=arg: v.split(" ")[idx], list_in)
+        list_in = map(lambda v: v.split(" ")[arg], list_in)
     elif cmd == "unique":
         list_in = iter(set(list_in))
     elif cmd == "sort":
@@ -50,7 +51,7 @@ def apply_cmd(cmd: str, val: str, list_in: Iterator) -> Iterator:
 
 
 @app.route("/perform_query", methods=['POST'])  # Пример filter:GET|regex:images\/\w+\.jpg|sort:desc
-def perform_query():
+def perform_query() -> Union[Response, BadRequest]:
     try:
         query = request.form["query"]
         file_name = request.form["file_name"]
